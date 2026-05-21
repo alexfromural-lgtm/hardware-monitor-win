@@ -72,26 +72,46 @@ async function getNvidiaGpus(): Promise<GpuCard[] | null> {
 
 /**
  * Collects GPU data.
- * Primary:  nvidia-smi (NVIDIA GPUs — full data including temp, load, VRAM, fan)
- * Fallback: systeminformation.graphics() (basic info for AMD/Intel GPUs)
+ * Merges systeminformation.graphics() controllers with nvidia-smi detailed metrics
+ * for NVIDIA GPUs, so all graphics controllers (e.g. Intel/AMD and NVIDIA) are returned.
  */
 export async function getGpuSnapshot(): Promise<GpuCard[]> {
-  const nvidiaCards = await getNvidiaGpus();
+  const [graphics, nvidiaCards] = await Promise.all([
+    si.graphics(),
+    getNvidiaGpus(),
+  ]);
 
-  if (nvidiaCards && nvidiaCards.length > 0) {
-    return nvidiaCards;
-  }
+  let nvidiaCount = 0;
 
-  // Fallback for non-NVIDIA GPUs
-  const graphics = await si.graphics();
-  return graphics.controllers.map((g, i) => ({
-    index: i,
-    name: g.model || 'Unknown GPU',
-    vendor: g.vendor || 'Unknown',
-    loadPercent: null,
-    temperatureC: typeof g.temperatureGpu === 'number' ? g.temperatureGpu : null,
-    vramTotalMB: typeof g.vram === 'number' ? g.vram : null,
-    vramUsedMB: null,
-    fanPercent: null,
-  }));
+  return graphics.controllers.map((g, i) => {
+    const isNvidia =
+      g.vendor?.toLowerCase().includes('nvidia') ||
+      g.model?.toLowerCase().includes('nvidia');
+
+    if (isNvidia && nvidiaCards && nvidiaCount < nvidiaCards.length) {
+      const nv = nvidiaCards[nvidiaCount];
+      nvidiaCount++;
+      return {
+        index: i,
+        name: nv.name || g.model || 'Unknown GPU',
+        vendor: 'NVIDIA',
+        loadPercent: nv.loadPercent,
+        temperatureC: nv.temperatureC,
+        vramTotalMB: nv.vramTotalMB || (typeof g.vram === 'number' ? g.vram : null),
+        vramUsedMB: nv.vramUsedMB,
+        fanPercent: nv.fanPercent,
+      };
+    }
+
+    return {
+      index: i,
+      name: g.model || 'Unknown GPU',
+      vendor: g.vendor || 'Unknown',
+      loadPercent: null,
+      temperatureC: typeof g.temperatureGpu === 'number' ? g.temperatureGpu : null,
+      vramTotalMB: typeof g.vram === 'number' ? g.vram : null,
+      vramUsedMB: null,
+      fanPercent: null,
+    };
+  });
 }
