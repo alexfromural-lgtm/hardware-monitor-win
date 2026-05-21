@@ -1,8 +1,12 @@
 import axios from 'axios';
+import { PubSub } from 'graphql-subscriptions';
 import { HardwareSnapshot } from '../shared/types';
 
 const COLLECTOR_URL = process.env.COLLECTOR_URL ?? 'http://host.docker.internal:5390';
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS ?? '2000', 10);
+
+export const pubsub = new PubSub();
+const HARDWARE_UPDATED = 'HARDWARE_UPDATED';
 
 let latestSnapshot: HardwareSnapshot | null = null;
 let pollTimer: NodeJS.Timeout | null = null;
@@ -13,9 +17,9 @@ async function poll(): Promise<void> {
       timeout: 5000,
     });
     latestSnapshot = response.data;
+    pubsub.publish(HARDWARE_UPDATED, { hardwareUpdated: latestSnapshot });
   } catch (err) {
     if (axios.isAxiosError(err)) {
-      // Only log connection errors; timeout/network issues logged at warn level
       console.warn(`[HardwareService] Cannot reach collector at ${COLLECTOR_URL}/rest — ${err.message}`);
     } else {
       console.error('[HardwareService] Unexpected poll error:', err);
@@ -50,3 +54,5 @@ export function stopPolling(): void {
 export function getLatestSnapshot(): HardwareSnapshot | null {
   return latestSnapshot;
 }
+
+export { HARDWARE_UPDATED };

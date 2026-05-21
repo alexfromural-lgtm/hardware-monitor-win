@@ -2,9 +2,13 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { WebSocketServer } from 'ws';
+import { useServer } from 'graphql-ws/use/ws';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { typeDefs } from './schema/typeDefs';
 import { resolvers } from './resolvers/hardware.resolver';
 import { startPolling, stopPolling } from '../services/hardware.service';
@@ -12,22 +16,45 @@ import { startPolling, stopPolling } from '../services/hardware.service';
 dotenv.config();
 
 const PORT = parseInt(process.env.PORT ?? '4000', 10);
-const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
+const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
 const IS_DEV = process.env.NODE_ENV !== 'production';
 
 async function startServer(): Promise<void> {
   const app = express();
   const httpServer = http.createServer(app);
 
+  // ── Build executable schema (shared between HTTP and WebSocket) ────────────
+  const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+  // ── WebSocket server for subscriptions ────────────────────────────────────
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/graphql',
+  });
+
+  // graphql-ws takes over the upgrade requests on /graphql
+  const serverCleanup = useServer({ schema }, wsServer);
+
   // ── Apollo Server setup ────────────────────────────────────────────────────
   const apolloServer = new ApolloServer({
-    typeDefs,
-    resolvers,
+    schema,
     // introspection always enabled — this is an internal monitoring tool
     introspection: true,
     includeStacktraceInErrorResponses: IS_DEV,
     plugins: [
       ApolloServerPluginLandingPageLocalDefault({ embed: true }),
+      // Proper shutdown for the HTTP server
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      // Proper shutdown for the WebSocket server
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              await serverCleanup.dispose();
+            },
+          };
+        },
+      },
     ],
   });
 
@@ -57,9 +84,10 @@ async function startServer(): Promise<void> {
     console.log('═══════════════════════════════════════════════════════');
     console.log('  Hardware Monitor — Apollo GraphQL Server');
     console.log('═══════════════════════════════════════════════════════');
-    console.log(`  GraphQL:  http://localhost:${PORT}/graphql`);
-    console.log(`  Health:   http://localhost:${PORT}/health`);
-    console.log(`  Mode:     ${IS_DEV ? 'development' : 'production'}`);
+    console.log(`  GraphQL (HTTP): http://localhost:${PORT}/graphql`);
+    console.log(`  GraphQL (WS):   ws://localhost:${PORT}/graphql`);
+    console.log(`  Health:         http://localhost:${PORT}/health`);
+    console.log(`  Mode:           ${IS_DEV ? 'development' : 'production'}`);
     console.log('═══════════════════════════════════════════════════════');
   });
 

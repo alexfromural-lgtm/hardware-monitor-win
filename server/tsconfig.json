@@ -13,7 +13,10 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "paths": {
+      "graphql-ws/use/ws": ["./node_modules/graphql-ws/dist/use/ws"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

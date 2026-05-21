@@ -76,4 +76,12 @@ export const typeDefs = `#graphql
     """
     hardware: HardwareSnapshot
   }
+
+  type Subscription {
+    """
+    Fires every POLL_INTERVAL_MS milliseconds with the latest hardware snapshot.
+    Pushes null if the collector has not yet responded.
+    """
+    hardwareUpdated: HardwareSnapshot
+  }
 `;
