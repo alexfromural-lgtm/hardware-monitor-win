@@ -1,0 +1,7 @@
+{
+  "watch": ["src/graphql", "src/services", "src/shared"],
+  "ext": "ts",
+  "exec": "ts-node src/graphql/index.ts",
+  "ignore": ["src/collector/**/*"],
+  "delay": 300
+}

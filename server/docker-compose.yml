@@ -1,0 +1,28 @@
+services:
+  hardware-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hardware-monitor-server
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Resolves to the Windows host machine from inside the Linux container.
+      # The native Collector runs there on port 5390.
+      COLLECTOR_URL: http://host.docker.internal:5390
+      POLL_INTERVAL_MS: 2000
+    # Ensures host.docker.internal DNS name works inside Linux containers
+    # on Docker Desktop for Windows (required when not using Windows containers)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
