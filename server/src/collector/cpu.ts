@@ -1,15 +1,26 @@
 import si from 'systeminformation';
 import { CpuSnapshot, Sensor } from '../shared/types';
 
+// ── Static CPU info — fetched once, never changes ──────────────────────────
+let _cpuInfoCache: Awaited<ReturnType<typeof si.cpu>> | null = null;
+
+async function getCpuInfo() {
+  if (!_cpuInfoCache) {
+    _cpuInfoCache = await si.cpu();
+  }
+  return _cpuInfoCache;
+}
+
 /**
  * Collects a CPU snapshot using systeminformation.
  * - Load: si.currentLoad() — reliable on Windows
  * - Temperature: si.cpuTemperature() — may return empty on Windows without Admin
  * - Clock: si.cpuCurrentSpeed() — per-core MHz
+ * - Static CPU info (brand, speed) is cached after the first call.
  */
 export async function getCpuSnapshot(): Promise<CpuSnapshot> {
   const [cpuInfo, currentLoad, cpuTemp, cpuSpeed] = await Promise.all([
-    si.cpu(),
+    getCpuInfo(),          // cached — no OS call after warm-up
     si.currentLoad(),
     si.cpuTemperature(),
     si.cpuCurrentSpeed(),

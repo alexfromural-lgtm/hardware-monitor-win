@@ -5,22 +5,47 @@ import { getGpuSnapshot } from './gpu';
 import { HardwareSnapshot } from '../shared/types';
 
 const PORT = parseInt(process.env.COLLECTOR_PORT ?? '5390', 10);
+// How long (ms) to serve a cached snapshot before re-sampling the hardware.
+// Should be slightly shorter than the GraphQL server's POLL_INTERVAL_MS (default 2000).
+const CACHE_TTL_MS = parseInt(process.env.CACHE_TTL_MS ?? '1500', 10);
 
-// ── Hardware collection ────────────────────────────────────────────────────────
+// ── Snapshot cache ───────────────────────────────────────────────────
+let _cachedSnapshot: HardwareSnapshot | null = null;
+let _cacheTime = 0;
+let _inflight: Promise<HardwareSnapshot> | null = null;
+
+// ── Hardware collection ───────────────────────────────────────────────────
 
 async function collectSnapshot(): Promise<HardwareSnapshot> {
-  const [cpu, ram, gpu] = await Promise.all([
-    getCpuSnapshot(),
-    getRamSnapshot(),
-    getGpuSnapshot(),
-  ]);
+  const now = Date.now();
 
-  return {
-    cpu,
-    ram,
-    gpu,
-    timestamp: new Date().toISOString(),
-  };
+  // Serve from cache if still fresh
+  if (_cachedSnapshot && now - _cacheTime < CACHE_TTL_MS) {
+    return _cachedSnapshot;
+  }
+
+  // Coalesce concurrent requests into a single OS sampling call
+  if (_inflight) return _inflight;
+
+  _inflight = (async () => {
+    const [cpu, ram, gpu] = await Promise.all([
+      getCpuSnapshot(),
+      getRamSnapshot(),
+      getGpuSnapshot(),
+    ]);
+    const snapshot: HardwareSnapshot = {
+      cpu,
+      ram,
+      gpu,
+      timestamp: new Date().toISOString(),
+    };
+    _cachedSnapshot = snapshot;
+    _cacheTime = Date.now();
+    _inflight = null;
+    return snapshot;
+  })();
+
+  return _inflight;
 }
 
 // ── HTTP Server ────────────────────────────────────────────────────────────────

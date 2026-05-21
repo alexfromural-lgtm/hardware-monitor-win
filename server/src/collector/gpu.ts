@@ -5,6 +5,16 @@ import { GpuCard } from '../shared/types';
 
 const execAsync = promisify(exec);
 
+// ── Static GPU controller list — fetched once, never changes ───────────────
+let _graphicsCache: Awaited<ReturnType<typeof si.graphics>> | null = null;
+
+async function getGraphics() {
+  if (!_graphicsCache) {
+    _graphicsCache = await si.graphics();
+  }
+  return _graphicsCache;
+}
+
 /**
  * Parses a value from nvidia-smi CSV output.
  * Returns null for "N/A", "[Not Supported]", or non-numeric strings.
@@ -77,8 +87,8 @@ async function getNvidiaGpus(): Promise<GpuCard[] | null> {
  */
 export async function getGpuSnapshot(): Promise<GpuCard[]> {
   const [graphics, nvidiaCards] = await Promise.all([
-    si.graphics(),
-    getNvidiaGpus(),
+    getGraphics(),   // cached — no OS enumeration after warm-up
+    getNvidiaGpus(), // live — queries nvidia-smi each call
   ]);
 
   let nvidiaCount = 0;
