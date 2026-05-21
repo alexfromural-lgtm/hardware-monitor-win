@@ -4,7 +4,10 @@ Real-time hardware monitoring dashboard for Windows machines — CPU, RAM, and
 GPU metrics streamed live to a browser via **GraphQL subscriptions over
 WebSocket**.
 
-![Dashboard screenshot](ui/public/favicon.svg)
+<p align="center">
+  <img src="assets/UI.png" alt="Hardware Monitor UI" width="49%" />
+  <img src="assets/UI_1.png" alt="Hardware Monitor UI Detail" width="49%" />
+</p>
 
 ## Repository Layout
 

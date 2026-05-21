@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import si from 'systeminformation';
 import { GpuCard } from '../shared/types';
+import { getPdhGpuMemory } from './gpu-pdh';
 
 const execAsync = promisify(exec);
 
@@ -81,17 +82,35 @@ async function getNvidiaGpus(): Promise<GpuCard[] | null> {
 }
 
 /**
- * Collects GPU data.
- * Merges systeminformation.graphics() controllers with nvidia-smi detailed metrics
- * for NVIDIA GPUs, so all graphics controllers (e.g. Intel/AMD and NVIDIA) are returned.
+ * Collects GPU data for all adapters.
+ *
+ * - NVIDIA cards:     nvidia-smi (dedicated VRAM, temp, fan, utilization)
+ * - Non-NVIDIA cards: Windows PDH "GPU Adapter Memory" counters
+ *
+ * PDH matching strategy for non-NVIDIA adapters:
+ *   Integrated GPUs (Intel/AMD iGPU) have NO dedicated VRAM — they consume
+ *   shared system RAM instead.  Windows Task Manager labels this "Shared GPU
+ *   memory".  Sorting PDH entries by sharedUsedBytes descending puts integrated
+ *   adapters first (they hold the largest shared allocation), while near-zero
+ *   virtual adapters (Microsoft Basic Display, etc.) sink to the bottom.
+ *   Non-NVIDIA controllers from systeminformation are then matched in order.
  */
 export async function getGpuSnapshot(): Promise<GpuCard[]> {
-  const [graphics, nvidiaCards] = await Promise.all([
-    getGraphics(),   // cached — no OS enumeration after warm-up
-    getNvidiaGpus(), // live — queries nvidia-smi each call
+  const [graphics, nvidiaCards, pdhMemory] = await Promise.all([
+    getGraphics(),     // cached — no OS enumeration after warm-up
+    getNvidiaGpus(),   // live — queries nvidia-smi each call
+    getPdhGpuMemory(), // live — Windows PDH counters for all adapters
   ]);
 
-  let nvidiaCount = 0;
+  let nvidiaCount    = 0;
+  let nonNvidiaCount = 0;
+
+  // Sort PDH entries by sharedUsedBytes descending so that integrated GPUs
+  // (Intel/AMD iGPU — high shared, zero dedicated) naturally rank before
+  // discrete non-NVIDIA adapters and virtual/idle adapters.
+  const pdhByShared = [...pdhMemory].sort(
+    (a, b) => b.sharedUsedBytes - a.sharedUsedBytes
+  );
 
   return graphics.controllers.map((g, i) => {
     const isNvidia =
@@ -99,8 +118,7 @@ export async function getGpuSnapshot(): Promise<GpuCard[]> {
       g.model?.toLowerCase().includes('nvidia');
 
     if (isNvidia && nvidiaCards && nvidiaCount < nvidiaCards.length) {
-      const nv = nvidiaCards[nvidiaCount];
-      nvidiaCount++;
+      const nv = nvidiaCards[nvidiaCount++];
       return {
         index: i,
         name: nv.name || g.model || 'Unknown GPU',
@@ -113,6 +131,18 @@ export async function getGpuSnapshot(): Promise<GpuCard[]> {
       };
     }
 
+    // Non-NVIDIA GPU — pick the Nth PDH entry from the shared-sorted list.
+    // Integrated adapters (Intel HD, Intel Iris, AMD Vega iGPU) rank first
+    // because they hold large shared allocations with zero dedicated VRAM.
+    const pdh = pdhByShared[nonNvidiaCount++] ?? null;
+
+    // sharedUsedBytes is the correct metric for integrated GPUs — it is exactly
+    // what Windows Task Manager shows as "Shared GPU memory in use".
+    // Round to 1 decimal place, in MB.
+    const pdhUsedMB = pdh !== null
+      ? Math.round((pdh.sharedUsedBytes / 1024 / 1024) * 10) / 10
+      : null;
+
     return {
       index: i,
       name: g.model || 'Unknown GPU',
@@ -120,7 +150,7 @@ export async function getGpuSnapshot(): Promise<GpuCard[]> {
       loadPercent: null,
       temperatureC: typeof g.temperatureGpu === 'number' ? g.temperatureGpu : null,
       vramTotalMB: typeof g.vram === 'number' ? g.vram : null,
-      vramUsedMB: null,
+      vramUsedMB: pdhUsedMB,
       fanPercent: null,
     };
   });
