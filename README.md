@@ -8,6 +8,7 @@ WebSocket**.
   <img src="assets/UI.png" alt="Hardware Monitor UI" height="180" align="middle" />
   <img src="assets/UI_1.png" alt="Hardware Monitor UI Detail" height="180" align="middle" />
   <img src="assets/UI_2.png" alt="Hardware Monitor UI Settings" height="180" align="middle" />
+  <img src="assets/UI_3.png" alt="Hardware Monitor UI NVIDIA 12Gb" height="180" align="middle" />  
 </p>
 
 ## Repository Layout
