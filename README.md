@@ -54,6 +54,9 @@ cp .env.sample .env      # then set CORS_ORIGIN=http://localhost:5173
 # Terminal A — hardware collector (Windows host)
 npm run collector
 
+Note: For PowerShell running as an Administrator run this first:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
 # Terminal B — GraphQL server with hot-reload
 npm run dev:graphql
 ```
