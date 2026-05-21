@@ -4,10 +4,15 @@ A real-time Windows hardware monitoring dashboard built with **React 19**,
 **Apollo Client**, and **TailwindCSS**. Connects to the GraphQL server via
 **WebSocket subscriptions** for live CPU, RAM, and GPU metrics.
 
-<p align="center">
-  <img src="../assets/UI.png" alt="Hardware Monitor UI" width="49%" />
-  <img src="../assets/UI_1.png" alt="Hardware Monitor UI Detail" width="49%" />
-</p>
+<div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; align-items: center; margin: 20px 0;">
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <img src="../assets/UI.png" alt="Hardware Monitor UI" style="width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" />
+    <img src="../assets/UI_1.png" alt="Hardware Monitor UI Detail" style="width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" />
+  </div>
+  <div>
+    <img src="../assets/UI_2.png" alt="Hardware Monitor UI Settings" style="width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" />
+  </div>
+</div>
 
 ## Stack
 

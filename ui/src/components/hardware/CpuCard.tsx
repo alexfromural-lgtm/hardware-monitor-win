@@ -1,6 +1,7 @@
 import { useState, useMemo, memo } from 'react';
 import type { CpuSnapshot } from '../../graphql/types';
 import { useHistory } from '../../hooks/useHistory';
+import { useDisplaySettings } from '../../store/displaySettings';
 import GlassCard from '../ui/GlassCard';
 import RingGauge from '../ui/RingGauge';
 import Sparkline from '../ui/Sparkline';
@@ -15,17 +16,25 @@ interface CpuCardProps {
 type ChartTab = 'load' | 'clock';
 
 function CpuCard({ cpu }: CpuCardProps) {
+  const { settings } = useDisplaySettings();
+  const showClock = settings.cpu.clock && Array.isArray(cpu.clock) && cpu.clock.length > 0;
+  const showTemp  = settings.cpu.temperature && Array.isArray(cpu.temperature) && cpu.temperature.length > 0;
+
   const [chartTab, setChartTab] = useState<ChartTab>('load');
+
   const loadHistory  = useHistory('cpu-load',  cpu.maxLoad);
-  const clockHistory = useHistory('cpu-clock', cpu.clock[0]?.value);
+  const clockHistory = useHistory('cpu-clock', showClock ? cpu.clock[0]?.value : undefined);
 
   const avgClock = useMemo(
     () =>
-      cpu.clock.length
+      showClock
         ? cpu.clock.reduce((s, c) => s + c.value, 0) / cpu.clock.length / 1000
         : null,
-    [cpu.clock],
+    [cpu.clock, showClock],
   );
+
+  // If clock tab was active but clock is now toggled off, fall back to load
+  const activeTab: ChartTab = chartTab === 'clock' && !showClock ? 'load' : chartTab;
 
   return (
     <GlassCard accentColor={CPU_COLOR} className="flex flex-col gap-4">
@@ -53,15 +62,17 @@ function CpuCard({ cpu }: CpuCardProps) {
       {/* Gauge row */}
       <div className="flex items-center gap-6">
         <RingGauge value={cpu.maxLoad} color={CPU_COLOR} size={110} label="Load" />
-        <div className="flex-1 flex flex-col gap-1 overflow-hidden max-h-[110px] overflow-y-auto pr-1">
-          {cpu.load.map((s) => (
-            <SensorRow key={s.name} sensor={s} color={CPU_COLOR} />
-          ))}
-        </div>
+        {settings.cpu.load && Array.isArray(cpu.load) && cpu.load.length > 0 && (
+          <div className="flex-1 flex flex-col gap-1 overflow-hidden max-h-[110px] overflow-y-auto pr-1">
+            {cpu.load.map((s) => (
+              <SensorRow key={s.name} sensor={s} color={CPU_COLOR} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Temperature row */}
-      {cpu.temperature.length > 0 && (
+      {showTemp && (
         <div className="flex items-center gap-2 text-xs text-white/50">
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
@@ -75,21 +86,29 @@ function CpuCard({ cpu }: CpuCardProps) {
       {/* Chart tabs */}
       <div>
         <div className="flex gap-2 mb-2">
-          {(['load', 'clock'] as ChartTab[]).map((tab) => (
+          <button
+            onClick={() => setChartTab('load')}
+            className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded transition-colors ${
+              activeTab === 'load' ? 'text-white' : 'text-white/30 hover:text-white/60'
+            }`}
+            style={activeTab === 'load' ? { color: CPU_COLOR } : undefined}
+          >
+            load
+          </button>
+          {showClock && (
             <button
-              key={tab}
-              onClick={() => setChartTab(tab)}
+              onClick={() => setChartTab('clock')}
               className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded transition-colors ${
-                chartTab === tab ? 'text-white' : 'text-white/30 hover:text-white/60'
+                activeTab === 'clock' ? 'text-white' : 'text-white/30 hover:text-white/60'
               }`}
-              style={chartTab === tab ? { color: CPU_COLOR } : undefined}
+              style={activeTab === 'clock' ? { color: CPU_COLOR } : undefined}
             >
-              {tab}
+              clock
             </button>
-          ))}
+          )}
         </div>
         <Sparkline
-          data={chartTab === 'load' ? loadHistory : clockHistory}
+          data={activeTab === 'load' ? loadHistory : clockHistory}
           color={CPU_COLOR}
           height={48}
           width={280}
@@ -100,3 +119,4 @@ function CpuCard({ cpu }: CpuCardProps) {
 }
 
 export default memo(CpuCard);
+

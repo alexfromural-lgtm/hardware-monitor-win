@@ -1,13 +1,14 @@
 import { useState, memo } from 'react';
 import type { GpuCard as GpuCardType } from '../../graphql/types';
 import { useHistory } from '../../hooks/useHistory';
+import { useDisplaySettings } from '../../store/displaySettings';
 import GlassCard from '../ui/GlassCard';
 import RingGauge from '../ui/RingGauge';
 import Sparkline from '../ui/Sparkline';
 
 const GPU_COLOR = '#fbbf24'; // amber-400
 
-const fmt = (v: number | null, decimals = 0, suffix = '') =>
+const fmt = (v: number | null | undefined, decimals = 0, suffix = '') =>
   v == null ? '—' : `${v.toFixed(decimals)}${suffix}`;
 
 interface SingleGpuPanelProps {
@@ -15,10 +16,11 @@ interface SingleGpuPanelProps {
 }
 
 const SingleGpuPanel = memo(function SingleGpuPanel({ gpu }: SingleGpuPanelProps) {
+  const { settings } = useDisplaySettings();
   const loadHistory = useHistory(`gpu-${gpu.index}-load`, gpu.loadPercent);
 
   const vramPct =
-    gpu.vramTotalMB && gpu.vramUsedMB
+    settings.gpu.vram && gpu.vramTotalMB && gpu.vramUsedMB
       ? (gpu.vramUsedMB / gpu.vramTotalMB) * 100
       : null;
 
@@ -34,26 +36,34 @@ const SingleGpuPanel = memo(function SingleGpuPanel({ gpu }: SingleGpuPanelProps
         />
         <div className="flex flex-col gap-2 text-sm">
           <div className="text-xs text-white/40 space-y-1">
-            <div className="flex justify-between gap-4">
-              <span className="text-white/50">Temp</span>
-              <span className="font-mono text-white/80">{fmt(gpu.temperatureC, 0, '°C')}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-white/50">Fan</span>
-              <span className="font-mono text-white/80">{fmt(gpu.fanPercent, 0, '%')}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-white/50">VRAM Used</span>
-              <span className="font-mono text-white/80">
-                {gpu.vramUsedMB != null ? `${(gpu.vramUsedMB / 1024).toFixed(1)} GB` : '—'}
-              </span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-white/50">VRAM Total</span>
-              <span className="font-mono text-white/80">
-                {gpu.vramTotalMB != null ? `${(gpu.vramTotalMB / 1024).toFixed(1)} GB` : '—'}
-              </span>
-            </div>
+            {settings.gpu.temperature && (
+              <div className="flex justify-between gap-4">
+                <span className="text-white/50">Temp</span>
+                <span className="font-mono text-white/80">{fmt(gpu.temperatureC, 0, '°C')}</span>
+              </div>
+            )}
+            {settings.gpu.fan && (
+              <div className="flex justify-between gap-4">
+                <span className="text-white/50">Fan</span>
+                <span className="font-mono text-white/80">{fmt(gpu.fanPercent, 0, '%')}</span>
+              </div>
+            )}
+            {settings.gpu.vram && (
+              <>
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/50">VRAM Used</span>
+                  <span className="font-mono text-white/80">
+                    {gpu.vramUsedMB != null ? `${(gpu.vramUsedMB / 1024).toFixed(1)} GB` : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-white/50">VRAM Total</span>
+                  <span className="font-mono text-white/80">
+                    {gpu.vramTotalMB != null ? `${(gpu.vramTotalMB / 1024).toFixed(1)} GB` : '—'}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

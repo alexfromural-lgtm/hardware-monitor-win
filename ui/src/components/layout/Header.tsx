@@ -5,9 +5,11 @@ type Status = 'live' | 'connecting' | 'error';
 interface HeaderProps {
   status: Status;
   lastUpdated: string | null;
+  onSettingsClick: () => void;
+  settingsOpen: boolean;
 }
 
-export default function Header({ status, lastUpdated }: HeaderProps) {
+export default function Header({ status, lastUpdated, onSettingsClick, settingsOpen }: HeaderProps) {
   const timeStr = lastUpdated
     ? new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : null;
@@ -27,13 +29,27 @@ export default function Header({ status, lastUpdated }: HeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {timeStr && (
           <span className="text-xs text-white/30 font-mono hidden sm:block">
             Updated {timeStr}
           </span>
         )}
         <StatusBadge status={status} />
+
+        {/* Settings gear button */}
+        <button
+          id="btn-settings"
+          onClick={onSettingsClick}
+          aria-label="Display options"
+          aria-expanded={settingsOpen}
+          className={`header-settings-btn ${settingsOpen ? 'header-settings-btn--active' : ''}`}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
       </div>
     </header>
   );

@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useSubscription } from '@apollo/client/react';
 import type { HardwareSnapshot } from '../graphql/types';
-import { HARDWARE_UPDATED } from '../graphql/queries';
+import { buildSubscription } from '../graphql/buildSubscription';
+import { useDisplaySettings } from '../store/displaySettings';
 
 interface UseHardwareResult {
   snapshot: HardwareSnapshot | null;
@@ -9,8 +11,13 @@ interface UseHardwareResult {
 }
 
 export function useHardware(): UseHardwareResult {
+  const { settings } = useDisplaySettings();
+
+  // Rebuild the gql document only when settings change
+  const query = useMemo(() => buildSubscription(settings), [settings]);
+
   const { data, loading, error } = useSubscription<{ hardwareUpdated: HardwareSnapshot | null }>(
-    HARDWARE_UPDATED,
+    query,
   );
   return {
     snapshot: data?.hardwareUpdated ?? null,

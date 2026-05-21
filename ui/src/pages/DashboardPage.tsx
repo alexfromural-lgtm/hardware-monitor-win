@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useHardware } from '../hooks/useHardware';
+import { useDisplaySettings } from '../store/displaySettings';
 import Header from '../components/layout/Header';
 import CpuCard from '../components/hardware/CpuCard';
 import RamCard from '../components/hardware/RamCard';
 import GpuCard from '../components/hardware/GpuCard';
+import SettingsPanel from '../components/ui/SettingsPanel';
 
 function SkeletonCard() {
   return (
@@ -21,14 +24,21 @@ function SkeletonCard() {
   );
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { snapshot, loading, error } = useHardware();
+  const { settings } = useDisplaySettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const status = error ? 'error' : loading && !snapshot ? 'connecting' : 'live';
 
   return (
     <div className="min-h-screen bg-[#0d1117] flex flex-col">
-      <Header status={status} lastUpdated={snapshot?.timestamp ?? null} />
+      <Header
+        status={status}
+        lastUpdated={snapshot?.timestamp ?? null}
+        onSettingsClick={() => setSettingsOpen((v) => !v)}
+        settingsOpen={settingsOpen}
+      />
 
       <main className="flex-1 p-6">
         {/* Error banner */}
@@ -47,9 +57,14 @@ export default function DashboardPage() {
           </div>
         ) : snapshot ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {/* CPU card — always shown, but inner sections follow settings */}
             <CpuCard cpu={snapshot.cpu} />
-            <RamCard ram={snapshot.ram} />
-            {snapshot.gpu.length > 0 && <GpuCard gpus={snapshot.gpu} />}
+
+            {/* RAM card — hidden when settings.ram is false */}
+            {settings.ram && snapshot.ram && <RamCard ram={snapshot.ram} />}
+
+            {/* GPU card — hidden when settings.gpu.enabled is false */}
+            {settings.gpu.enabled && snapshot.gpu.length > 0 && <GpuCard gpus={snapshot.gpu} />}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-64 text-white/30">
@@ -60,6 +75,12 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
+}
+
+export default function DashboardPage() {
+  return <DashboardContent />;
 }
