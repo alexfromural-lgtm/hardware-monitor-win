@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { RamSnapshot } from '../../graphql/types';
 import { useHistory } from '../../hooks/useHistory';
 import GlassCard from '../ui/GlassCard';
@@ -10,7 +11,7 @@ interface RamCardProps {
   ram: RamSnapshot;
 }
 
-export default function RamCard({ ram }: RamCardProps) {
+function RamCard({ ram }: RamCardProps) {
   const loadHistory = useHistory('ram-load', ram.loadPercent);
 
   const usedPct  = ram.loadPercent;
@@ -69,3 +70,5 @@ export default function RamCard({ ram }: RamCardProps) {
     </GlassCard>
   );
 }
+
+export default memo(RamCard);

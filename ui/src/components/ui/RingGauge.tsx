@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 interface RingGaugeProps {
   value: number;        // 0–100
   color: string;        // CSS color
@@ -6,7 +8,7 @@ interface RingGaugeProps {
   label?: string;
 }
 
-export default function RingGauge({
+function RingGauge({
   value,
   color,
   size = 120,
@@ -56,3 +58,5 @@ export default function RingGauge({
     </div>
   );
 }
+
+export default memo(RingGauge);

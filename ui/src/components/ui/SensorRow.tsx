@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Sensor } from '../../graphql/types';
 
 interface SensorRowProps {
@@ -7,7 +8,7 @@ interface SensorRowProps {
   maxValue?: number;
 }
 
-export default function SensorRow({ sensor, color, unit = '%', maxValue = 100 }: SensorRowProps) {
+function SensorRow({ sensor, color, unit = '%', maxValue = 100 }: SensorRowProps) {
   const pct = Math.min(100, (sensor.value / maxValue) * 100);
   return (
     <div className="flex items-center gap-2 py-0.5">
@@ -24,3 +25,5 @@ export default function SensorRow({ sensor, color, unit = '%', maxValue = 100 }:
     </div>
   );
 }
+
+export default memo(SensorRow);

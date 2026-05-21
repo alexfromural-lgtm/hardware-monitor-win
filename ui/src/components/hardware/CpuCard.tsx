@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import type { CpuSnapshot } from '../../graphql/types';
 import { useHistory } from '../../hooks/useHistory';
 import GlassCard from '../ui/GlassCard';
@@ -14,14 +14,18 @@ interface CpuCardProps {
 
 type ChartTab = 'load' | 'clock';
 
-export default function CpuCard({ cpu }: CpuCardProps) {
+function CpuCard({ cpu }: CpuCardProps) {
   const [chartTab, setChartTab] = useState<ChartTab>('load');
   const loadHistory  = useHistory('cpu-load',  cpu.maxLoad);
   const clockHistory = useHistory('cpu-clock', cpu.clock[0]?.value);
 
-  const avgClock = cpu.clock.length
-    ? cpu.clock.reduce((s, c) => s + c.value, 0) / cpu.clock.length / 1000 // GHz
-    : null;
+  const avgClock = useMemo(
+    () =>
+      cpu.clock.length
+        ? cpu.clock.reduce((s, c) => s + c.value, 0) / cpu.clock.length / 1000
+        : null,
+    [cpu.clock],
+  );
 
   return (
     <GlassCard accentColor={CPU_COLOR} className="flex flex-col gap-4">
@@ -94,3 +98,5 @@ export default function CpuCard({ cpu }: CpuCardProps) {
     </GlassCard>
   );
 }
+
+export default memo(CpuCard);

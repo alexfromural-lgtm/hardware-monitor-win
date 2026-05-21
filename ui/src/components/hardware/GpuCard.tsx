@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { GpuCard as GpuCardType } from '../../graphql/types';
 import { useHistory } from '../../hooks/useHistory';
 import GlassCard from '../ui/GlassCard';
@@ -14,7 +14,7 @@ interface SingleGpuPanelProps {
   gpu: GpuCardType;
 }
 
-function SingleGpuPanel({ gpu }: SingleGpuPanelProps) {
+const SingleGpuPanel = memo(function SingleGpuPanel({ gpu }: SingleGpuPanelProps) {
   const loadHistory = useHistory(`gpu-${gpu.index}-load`, gpu.loadPercent);
 
   const vramPct =
@@ -81,13 +81,13 @@ function SingleGpuPanel({ gpu }: SingleGpuPanelProps) {
       </div>
     </div>
   );
-}
+});
 
 interface GpuCardProps {
   gpus: GpuCardType[];
 }
 
-export default function GpuCard({ gpus }: GpuCardProps) {
+function GpuCard({ gpus }: GpuCardProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const activeGpu = gpus[activeIdx] ?? gpus[0];
 
@@ -132,3 +132,5 @@ export default function GpuCard({ gpus }: GpuCardProps) {
     </GlassCard>
   );
 }
+
+export default memo(GpuCard);

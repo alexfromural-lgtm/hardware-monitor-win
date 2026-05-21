@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 interface SparklineProps {
   data: number[];
   color: string;
@@ -6,7 +8,7 @@ interface SparklineProps {
   filled?: boolean;
 }
 
-export default function Sparkline({
+function Sparkline({
   data,
   color,
   height = 48,
@@ -17,8 +19,10 @@ export default function Sparkline({
     return <div style={{ width, height }} className="opacity-20 bg-white/5 rounded" />;
   }
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
+  // Use reduce instead of Math.min/max spread to avoid copying the whole
+  // array into function arguments on every render.
+  const min = data.reduce((a, b) => (b < a ? b : a), data[0]);
+  const max = data.reduce((a, b) => (b > a ? b : a), data[0]);
   const range = max - min || 1;
   const pad = 2;
 
@@ -56,3 +60,5 @@ export default function Sparkline({
     </svg>
   );
 }
+
+export default memo(Sparkline);

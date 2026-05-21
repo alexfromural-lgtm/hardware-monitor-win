@@ -12,6 +12,14 @@ const wsLink = new GraphQLWsLink(
     url: import.meta.env.VITE_GRAPHQL_WS_URL ?? 'ws://localhost:4000/graphql',
     retryAttempts: Infinity,
     shouldRetry: () => true,
+    // Exponential back-off: 1 s → 2 s → 4 s … capped at 30 s.
+    // Without this, infinite retries with no delay spin the CPU when
+    // the server is unreachable.
+    retryWait: async (retries) => {
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(1_000 * 2 ** retries, 30_000)),
+      );
+    },
   }),
 );
 
