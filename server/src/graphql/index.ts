@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { typeDefs } from './schema/typeDefs';
 import { resolvers } from './resolvers/hardware.resolver';
 import { startPolling, stopPolling } from '../services/hardware.service';
@@ -25,6 +26,9 @@ async function startServer(): Promise<void> {
     // introspection always enabled — this is an internal monitoring tool
     introspection: true,
     includeStacktraceInErrorResponses: IS_DEV,
+    plugins: [
+      ApolloServerPluginLandingPageLocalDefault({ embed: true }),
+    ],
   });
 
   await apolloServer.start();
