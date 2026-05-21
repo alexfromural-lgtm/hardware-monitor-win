@@ -4,15 +4,11 @@ Real-time hardware monitoring dashboard for Windows machines — CPU, RAM, and
 GPU metrics streamed live to a browser via **GraphQL subscriptions over
 WebSocket**.
 
-<div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; align-items: center; margin: 20px 0;">
-  <div style="display: flex; flex-direction: column; gap: 12px;">
-    <img src="assets/UI.png" alt="Hardware Monitor UI" style="width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" />
-    <img src="assets/UI_1.png" alt="Hardware Monitor UI Detail" style="width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" />
-  </div>
-  <div>
-    <img src="assets/UI_2.png" alt="Hardware Monitor UI Settings" style="width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" />
-  </div>
-</div>
+<p align="center">
+  <img src="assets/UI.png" alt="Hardware Monitor UI" height="180" align="middle" />
+  <img src="assets/UI_1.png" alt="Hardware Monitor UI Detail" height="180" align="middle" />
+  <img src="assets/UI_2.png" alt="Hardware Monitor UI Settings" height="180" align="middle" />
+</p>
 
 ## Repository Layout
 
@@ -29,11 +25,11 @@ hardware-monitor-win/
 │  Windows Host                                                   │
 │                                                                 │
 │  ┌──────────────┐  REST/:5390   ┌────────────────────────────┐ │
-│  │  Collector   │──────────────▶│  Apollo GraphQL Server     │ │
+│  │  Collector   │─────────────▶│  Apollo GraphQL Server     │ │
 │  │  (npm run    │               │  HTTP  :4000/graphql       │ │
 │  │  collector)  │               │  WS    :4000/graphql       │ │
 │  └──────────────┘               └────────────┬───────────────┘ │
-│                                              │ WebSocket        │
+│                                             │ WebSocket        │
 │  ┌──────────────────────────────────────────▼───────────────┐  │
 │  │  Browser — http://localhost:5173                         │  │
 │  │  React 19 + Apollo Client (graphql-ws subscription)      │  │
