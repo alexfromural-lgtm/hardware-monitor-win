@@ -11,19 +11,20 @@ const CPU_COLOR = '#22d3ee'; // cyan-400
 
 interface CpuCardProps {
   cpu: CpuSnapshot;
+  timestamp: string;
 }
 
 type ChartTab = 'load' | 'clock';
 
-function CpuCard({ cpu }: CpuCardProps) {
+function CpuCard({ cpu, timestamp }: CpuCardProps) {
   const { settings } = useDisplaySettings();
   const showClock = settings.cpu.clock && Array.isArray(cpu.clock) && cpu.clock.length > 0;
   const showTemp  = settings.cpu.temperature && Array.isArray(cpu.temperature) && cpu.temperature.length > 0;
 
   const [chartTab, setChartTab] = useState<ChartTab>('load');
 
-  const loadHistory  = useHistory('cpu-load',  cpu.maxLoad);
-  const clockHistory = useHistory('cpu-clock', showClock ? cpu.clock[0]?.value : undefined);
+  const loadHistory  = useHistory('cpu-load',  cpu.maxLoad, timestamp);
+  const clockHistory = useHistory('cpu-clock', showClock ? cpu.clock[0]?.value : undefined, timestamp);
 
   const avgClock = useMemo(
     () =>

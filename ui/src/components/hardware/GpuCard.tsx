@@ -13,11 +13,12 @@ const fmt = (v: number | null | undefined, decimals = 0, suffix = '') =>
 
 interface SingleGpuPanelProps {
   gpu: GpuCardType;
+  timestamp: string;
 }
 
-const SingleGpuPanel = memo(function SingleGpuPanel({ gpu }: SingleGpuPanelProps) {
+const SingleGpuPanel = memo(function SingleGpuPanel({ gpu, timestamp }: SingleGpuPanelProps) {
   const { settings } = useDisplaySettings();
-  const loadHistory = useHistory(`gpu-${gpu.index}-load`, gpu.loadPercent);
+  const loadHistory = useHistory(`gpu-${gpu.index}-load`, gpu.loadPercent, timestamp);
 
   const vramPct =
     settings.gpu.vram && gpu.vramTotalMB && gpu.vramUsedMB
@@ -95,9 +96,10 @@ const SingleGpuPanel = memo(function SingleGpuPanel({ gpu }: SingleGpuPanelProps
 
 interface GpuCardProps {
   gpus: GpuCardType[];
+  timestamp: string;
 }
 
-function GpuCard({ gpus }: GpuCardProps) {
+function GpuCard({ gpus, timestamp }: GpuCardProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const activeGpu = gpus[activeIdx] ?? gpus[0];
 
@@ -138,7 +140,7 @@ function GpuCard({ gpus }: GpuCardProps) {
       <p className="text-sm text-white/60 leading-tight -mt-2">{activeGpu.name}</p>
 
       {/* Panel for active GPU */}
-      <SingleGpuPanel key={activeGpu.index} gpu={activeGpu} />
+      <SingleGpuPanel key={activeGpu.index} gpu={activeGpu} timestamp={timestamp} />
     </GlassCard>
   );
 }

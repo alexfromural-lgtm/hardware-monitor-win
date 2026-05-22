@@ -9,10 +9,11 @@ const RAM_COLOR = '#a78bfa'; // violet-400
 
 interface RamCardProps {
   ram: RamSnapshot;
+  timestamp: string;
 }
 
-function RamCard({ ram }: RamCardProps) {
-  const loadHistory = useHistory('ram-load', ram.loadPercent);
+function RamCard({ ram, timestamp }: RamCardProps) {
+  const loadHistory = useHistory('ram-load', ram.loadPercent, timestamp);
 
   const usedPct  = ram.loadPercent;
   const freePct  = 100 - usedPct;

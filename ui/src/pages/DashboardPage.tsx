@@ -58,13 +58,13 @@ function DashboardContent() {
         ) : snapshot ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* CPU card — always shown, but inner sections follow settings */}
-            <CpuCard cpu={snapshot.cpu} />
+            <CpuCard cpu={snapshot.cpu} timestamp={snapshot.timestamp} />
 
             {/* RAM card — hidden when settings.ram is false */}
-            {settings.ram && snapshot.ram && <RamCard ram={snapshot.ram} />}
+            {settings.ram && snapshot.ram && <RamCard ram={snapshot.ram} timestamp={snapshot.timestamp} />}
 
             {/* GPU card — hidden when settings.gpu.enabled is false */}
-            {settings.gpu.enabled && snapshot.gpu.length > 0 && <GpuCard gpus={snapshot.gpu} />}
+            {settings.gpu.enabled && snapshot.gpu.length > 0 && <GpuCard gpus={snapshot.gpu} timestamp={snapshot.timestamp} />}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-64 text-white/30">

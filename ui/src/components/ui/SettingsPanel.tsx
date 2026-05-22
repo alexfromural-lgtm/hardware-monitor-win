@@ -120,6 +120,34 @@ function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             <Toggle label="Fan Speed"   checked={settings.gpu.fan}         action={{ type: 'TOGGLE_GPU_FAN' }}         dispatch={dispatch} indent />
             <Toggle label="VRAM Usage"  checked={settings.gpu.vram}        action={{ type: 'TOGGLE_GPU_VRAM' }}        dispatch={dispatch} indent />
           </section>
+
+          <div className="settings-divider" />
+
+          {/* Update Speed Section */}
+          <section className="settings-section">
+            <div className="settings-select-group">
+              <div className="settings-select-group__label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                Update Frequency
+              </div>
+              <div className="settings-select-buttons">
+                {[1000, 2000, 5000, 10000].map((ms) => (
+                  <button
+                    key={ms}
+                    className={`settings-select-btn ${
+                      settings.updateInterval === ms ? 'settings-select-btn--active' : ''
+                    }`}
+                    onClick={() => dispatch({ type: 'SET_UPDATE_INTERVAL', payload: ms })}
+                  >
+                    {ms / 1000}s
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
         </div>
 
         <div className="settings-panel__footer">

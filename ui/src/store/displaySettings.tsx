@@ -15,6 +15,7 @@ export interface DisplaySettings {
     fan: boolean;
     vram: boolean;
   };
+  updateInterval: number;
 }
 
 export type DisplaySettingsAction =
@@ -26,6 +27,7 @@ export type DisplaySettingsAction =
   | { type: 'TOGGLE_GPU_TEMPERATURE' }
   | { type: 'TOGGLE_GPU_FAN' }
   | { type: 'TOGGLE_GPU_VRAM' }
+  | { type: 'SET_UPDATE_INTERVAL'; payload: number }
   | { type: 'RESET' };
 
 // ── Defaults ─────────────────────────────────────────────────────────────────
@@ -34,6 +36,7 @@ const DEFAULT_SETTINGS: DisplaySettings = {
   cpu: { load: true, temperature: true, clock: true },
   ram: true,
   gpu: { enabled: true, temperature: true, fan: true, vram: true },
+  updateInterval: 5000,
 };
 
 const STORAGE_KEY = 'hw-monitor-display-settings';
@@ -68,6 +71,8 @@ function reducer(state: DisplaySettings, action: DisplaySettingsAction): Display
       return { ...state, gpu: { ...state.gpu, fan: !state.gpu.fan } };
     case 'TOGGLE_GPU_VRAM':
       return { ...state, gpu: { ...state.gpu, vram: !state.gpu.vram } };
+    case 'SET_UPDATE_INTERVAL':
+      return { ...state, updateInterval: action.payload };
     case 'RESET':
       return DEFAULT_SETTINGS;
     default:
