@@ -4,12 +4,15 @@ import { getMainDefinition } from '@apollo/client/utilities';
 import { createClient } from 'graphql-ws';
 
 const httpLink = new HttpLink({
-  uri: import.meta.env.VITE_GRAPHQL_HTTP_URL ?? 'http://localhost:4000/graphql',
+  uri: import.meta.env.VITE_GRAPHQL_HTTP_URL ?? '/graphql',
 });
 
 const wsLink = new GraphQLWsLink(
   createClient({
-    url: import.meta.env.VITE_GRAPHQL_WS_URL ?? 'ws://localhost:4000/graphql',
+    url: import.meta.env.VITE_GRAPHQL_WS_URL ?? (() => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${window.location.host}/graphql`;
+    })(),
     retryAttempts: Infinity,
     shouldRetry: () => true,
     // Exponential back-off: 1 s → 2 s → 4 s … capped at 30 s.
