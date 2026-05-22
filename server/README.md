@@ -11,7 +11,8 @@ Windows Host
 ├── Collector (npm run collector)   → reads hardware → exposes :5390/rest
 └── GraphQL Server (Docker or dev)
     ├── Apollo HTTP  :4000/graphql  → query / mutation
-    └── WebSocket    :4000/graphql  → subscription (graphql-ws protocol)
+    ├── WebSocket    :4000/graphql  → subscription (graphql-ws protocol)
+    └── Health       :4000/health   → Docker healthcheck endpoint
 ```
 
 The GraphQL server polls the Collector every `POLL_INTERVAL_MS` milliseconds
@@ -46,6 +47,12 @@ Update `CORS_ORIGIN` to match the origin of the UI (default: `http://localhost:5
 npm run collector
 ```
 
+> **Note**: On PowerShell running as an Administrator, run this first if scripts
+> are blocked:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
 Verify: `curl http://localhost:5390/rest`
 
 ### 4a. Start the GraphQL Server via Docker (production-like)
@@ -78,6 +85,51 @@ Navigate to **http://localhost:4000/graphql**
 
 ## GraphQL API
 
+### Types
+
+```graphql
+# Named sensor reading with current, min, and max values
+type Sensor {
+  name: String!
+  value: Float!
+  min: Float!
+  max: Float!
+}
+
+type CpuSnapshot {
+  name: String!
+  maxLoad: Float!          # Overall utilization % (0-100)
+  load:        [Sensor!]! # Per-core load sensors
+  temperature: [Sensor!]! # Per-core/package temps in °C (may be empty without admin)
+  clock:       [Sensor!]! # Per-core clock speeds in MHz
+}
+
+type RamSnapshot {
+  totalGB:     Float!
+  usedGB:      Float!
+  freeGB:      Float!
+  loadPercent: Float!
+}
+
+type GpuCard {
+  index:       Int!
+  name:        String!
+  vendor:      String!
+  loadPercent: Float    # null if unavailable
+  temperatureC: Float   # null if unavailable
+  vramTotalMB: Float    # null if unavailable
+  vramUsedMB:  Float    # null if unavailable
+  fanPercent:  Float    # null if unavailable
+}
+
+type HardwareSnapshot {
+  cpu:       CpuSnapshot!
+  ram:       RamSnapshot!
+  gpu:       [GpuCard!]!
+  timestamp: String!    # ISO 8601
+}
+```
+
 ### Query — current snapshot
 
 ```graphql
@@ -86,16 +138,20 @@ query {
     cpu {
       name
       maxLoad
-      cores { name loadPercent clockMHz }
-      temperature { name value }
+      load        { name value min max }
+      temperature { name value min max }
+      clock       { name value min max }
     }
     ram {
       totalGB
       usedGB
+      freeGB
       loadPercent
     }
     gpu {
+      index
       name
+      vendor
       loadPercent
       temperatureC
       vramTotalMB
@@ -113,15 +169,18 @@ query {
 subscription {
   hardwareUpdated {
     timestamp
-    cpu { name maxLoad cores { name loadPercent } }
-    ram { usedGB loadPercent }
-    gpu { name loadPercent temperatureC }
+    cpu { name maxLoad load { name value } }
+    ram { usedGB freeGB loadPercent }
+    gpu { index name vendor loadPercent temperatureC }
   }
 }
 ```
 
 Connect via WebSocket to `ws://localhost:4000/graphql` using the
 [graphql-ws](https://github.com/enisdenjo/graphql-ws) client protocol.
+
+> The UI builds the subscription document dynamically via `buildSubscription.ts`,
+> requesting only the fields the user has enabled in the Settings Panel.
 
 ## Environment Variables
 
@@ -142,3 +201,4 @@ Connect via WebSocket to `ws://localhost:4000/graphql` using the
 - The Collector process must stay running while the GraphQL server is active.
 - In development, the Collector and GraphQL server can both run natively on
   Windows (no Docker needed).
+- A `/health` endpoint is exposed for Docker healthcheck probes.

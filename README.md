@@ -56,8 +56,8 @@ cp .env.sample .env      # then set CORS_ORIGIN=http://localhost:5173
 # Terminal A — hardware collector (Windows host)
 npm run collector
 
-Note: For PowerShell running as an Administrator run this first:
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# Note: For PowerShell running as an Administrator run this first:
+# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 # Terminal B — GraphQL server with hot-reload
 npm run dev:graphql
@@ -90,7 +90,7 @@ npm run dev
 
 | Folder | Description | Docs |
 |---|---|---|
-| [`server/`](server/) | Node.js · TypeScript · Apollo Server · graphql-ws | [server/README.md](server/README.md) |
+| [`server/`](server/) | Node.js · TypeScript · Apollo Server · graphql-ws · Zod · Helmet | [server/README.md](server/README.md) |
 | [`ui/`](ui/) | React 19 · Vite 8 · Apollo Client v4 · TailwindCSS v4 | [ui/README.md](ui/README.md) |
 
 ## Key Features
@@ -101,3 +101,8 @@ npm run dev
 - **Multi-GPU support** — tabbed view, one tab per detected GPU
 - **Live connection badge** — `LIVE` / `CONNECTING` / `ERROR` status at a glance
 - **Skeleton loaders** — frosted-glass placeholders while the first snapshot arrives
+- **Settings panel** — slide-in drawer to toggle metric sections (load, temperature,
+  clock, fan, VRAM) and set the UI update frequency (1 s / 2 s / 5 s / 10 s)
+- **Dynamic GraphQL query** — only enabled fields are requested, saving bandwidth
+- **Client-side throttle** — React re-renders capped at the chosen update interval
+- **Page Visibility API** — rendering pauses when the tab is hidden

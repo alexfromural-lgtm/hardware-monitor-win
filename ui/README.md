@@ -56,7 +56,7 @@ npm run dev
 ```
 
 Open **http://localhost:5173** — the dashboard connects immediately and
-displays live data pushed by the server every 2 seconds.
+displays live data pushed by the server.
 
 ## Available Scripts
 
@@ -80,27 +80,31 @@ displays live data pushed by the server every 2 seconds.
 ```
 src/
 ├── graphql/
-│   ├── client.ts        # Apollo Client — HTTP + WebSocket split link
-│   ├── queries.ts       # HARDWARE_UPDATED subscription document
-│   └── types.ts         # TypeScript interfaces mirroring the GraphQL schema
+│   ├── client.ts              # Apollo Client — HTTP + WebSocket split link
+│   ├── buildSubscription.ts   # Dynamically builds subscription from display settings
+│   ├── queries.ts             # Static GraphQL document fragments
+│   └── types.ts               # TypeScript interfaces mirroring the GraphQL schema
+├── store/
+│   └── displaySettings.tsx    # React Context + useReducer — persisted display preferences
 ├── hooks/
-│   ├── useHardware.ts   # Wraps useSubscription — returns live snapshot
-│   └── useHistory.ts    # Persists rolling 60-point history to localStorage
+│   ├── useHardware.ts         # Subscription + client-side throttle + Page Visibility API
+│   └── useHistory.ts          # Persists rolling 60-point history to localStorage
 ├── components/
 │   ├── ui/
-│   │   ├── GlassCard.tsx    # Frosted-glass card base
-│   │   ├── RingGauge.tsx    # Animated SVG arc gauge
-│   │   ├── Sparkline.tsx    # SVG polyline history chart
-│   │   ├── StatusBadge.tsx  # LIVE / CONNECTING / ERROR indicator
-│   │   └── SensorRow.tsx    # Per-core bar with label and value
+│   │   ├── GlassCard.tsx      # Frosted-glass card base
+│   │   ├── RingGauge.tsx      # Animated SVG arc gauge
+│   │   ├── Sparkline.tsx      # SVG polyline history chart
+│   │   ├── StatusBadge.tsx    # LIVE / CONNECTING / ERROR indicator
+│   │   ├── SensorRow.tsx      # Per-core bar with label and value
+│   │   └── SettingsPanel.tsx  # Slide-in drawer for display options
 │   ├── hardware/
-│   │   ├── CpuCard.tsx   # CPU gauge, per-core bars, LOAD/CLOCK sparkline tabs
-│   │   ├── RamCard.tsx   # RAM gauge, used/free bar, load history sparkline
-│   │   └── GpuCard.tsx   # Tab-per-GPU, VRAM bar, core load sparkline
+│   │   ├── CpuCard.tsx        # CPU gauge, per-core bars, LOAD/CLOCK/TEMP sparkline tabs
+│   │   ├── RamCard.tsx        # RAM gauge, used/free bar, load history sparkline
+│   │   └── GpuCard.tsx        # Tab-per-GPU, VRAM bar, core load sparkline
 │   └── layout/
-│       └── Header.tsx    # Logo, last-updated timestamp, connection badge
+│       └── Header.tsx         # Logo, last-updated timestamp, connection badge, settings button
 └── pages/
-    └── DashboardPage.tsx # Responsive 3-column grid + skeletons + error state
+    └── DashboardPage.tsx      # Responsive 3-column grid + skeletons + error state
 ```
 
 ## Features
@@ -112,8 +116,39 @@ src/
 - **Multi-GPU tabs** — each GPU gets its own tab inside a single card
 - **Skeleton loaders** — glass-morphism placeholders shown while connecting
 - **Error banner** — friendly message if the subscription drops
-- **Responsive layout** — two-column (CPU + RAM) above GPU on wider screens;
+- **Responsive layout** — three-column grid (CPU · RAM · GPU) on wide screens;
   stacks to single column on narrow viewports
+- **Settings panel** — slide-in drawer lets you toggle individual metric
+  sections (per-core load, temperature, clock speed, GPU fan, VRAM) and
+  choose the UI update frequency (1 s / 2 s / 5 s / 10 s)
+- **Dynamic GraphQL query** — only the fields enabled in Settings are
+  requested from the server, saving bandwidth
+- **Client-side throttle** — re-renders are capped at the chosen update
+  interval regardless of how fast WebSocket frames arrive
+- **Page Visibility API** — rendering pauses when the browser tab is hidden;
+  the latest buffered snapshot is shown immediately on tab focus
+
+## Display Settings
+
+The gear icon in the header opens the **Settings Panel**. All settings are
+persisted to `localStorage` under `hw-monitor-display-settings` and applied
+immediately without a page reload.
+
+| Setting | Default | Description |
+|---|---|---|
+| CPU › Per-core Load | on | Show per-core load sensor bars and sparkline |
+| CPU › Temperature | on | Show per-core / package temperature readings |
+| CPU › Clock Speed | on | Show per-core clock speed readings |
+| RAM card | on | Show / hide the entire RAM card |
+| GPU card | on | Show / hide the entire GPU card |
+| GPU › Temperature | on | Show GPU temperature |
+| GPU › Fan Speed | on | Show GPU fan speed |
+| GPU › VRAM Usage | on | Show VRAM used / total bar |
+| Update Frequency | 5 s | How often React re-renders (1 s / 2 s / 5 s / 10 s) |
+
+> The update frequency controls only the React render rate. The server still
+> pushes data every `POLL_INTERVAL_MS` (default 2 s); the client throttles
+> how often those frames trigger a state update.
 
 ## How Subscriptions Work
 
@@ -130,3 +165,7 @@ Browser                               Server
 
 Apollo Client's **split link** automatically routes `Subscription` operations
 over WebSocket and `Query`/`Mutation` operations over HTTP.
+
+The subscription document is rebuilt by `buildSubscription.ts` whenever the
+display settings change, so only the fields the user has enabled are included
+in the request.
