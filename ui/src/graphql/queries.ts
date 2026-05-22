@@ -30,5 +30,3 @@ export const HARDWARE_UPDATED = gql`
     }
   }
 `;
-
-

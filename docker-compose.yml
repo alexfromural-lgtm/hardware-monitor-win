@@ -1,0 +1,52 @@
+# ── Root-level compose — orchestrates UI (Nginx) + GraphQL server ─────────────
+services:
+
+  # ── UI: React SPA served by Nginx ──────────────────────────────────────────
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: hardware-monitor-ui
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      hardware-monitor-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Server: GraphQL API ─────────────────────────────────────────────────────
+  hardware-monitor-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: hardware-monitor-server
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./server/.env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Resolves to the Windows host machine from inside the Linux container.
+      # The native Collector runs there on port 5390.
+      COLLECTOR_URL: http://host.docker.internal:5390
+      POLL_INTERVAL_MS: 2000
+      # In production the UI is served from the same origin (Nginx on port 80)
+      CORS_ORIGIN: http://localhost
+    # Ensures host.docker.internal DNS name works inside Linux containers
+    # on Docker Desktop for Windows (required when not using Windows containers)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
