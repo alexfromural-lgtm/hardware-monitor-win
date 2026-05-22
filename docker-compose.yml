@@ -32,7 +32,7 @@ services:
     env_file:
       - ./server/.env
     environment:
-      NODE_ENV: production
+      NODE_ENV: production # Overridden to "production" by docker-compose.yml
       PORT: 4000
       # Resolves to the Windows host machine from inside the Linux container.
       # The native Collector runs there on port 5390.
