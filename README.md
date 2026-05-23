@@ -46,7 +46,12 @@ hardware-monitor-win/
 - Node.js 20+
 - Docker Desktop (for the server Docker workflow — optional for dev)
 
-### 1. Start the server
+### 1. Start the server and UI together
+```bash
+docker compose up --build
+```
+
+### 1. Start the server separately
 
 ```bash
 cd server
@@ -70,7 +75,7 @@ npm run dev:graphql
 
 ---
 
-### 2. Start the UI
+### 2. Start the UI separately
 
 ```bash
 cd ui

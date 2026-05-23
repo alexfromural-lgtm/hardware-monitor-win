@@ -64,7 +64,7 @@ function DashboardContent() {
             {settings.ram && snapshot.ram && <RamCard ram={snapshot.ram} timestamp={snapshot.timestamp} />}
 
             {/* GPU card — hidden when settings.gpu.enabled is false */}
-            {settings.gpu.enabled && snapshot.gpu.length > 0 && <GpuCard gpus={snapshot.gpu} timestamp={snapshot.timestamp} />}
+            {settings.gpu.enabled && snapshot.gpu && snapshot.gpu.length > 0 && <GpuCard gpus={snapshot.gpu} timestamp={snapshot.timestamp} />}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-64 text-white/30">
