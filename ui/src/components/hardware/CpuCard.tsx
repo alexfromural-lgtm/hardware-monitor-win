@@ -61,10 +61,12 @@ function CpuCard({ cpu, timestamp }: CpuCardProps) {
       </div>
 
       {/* Gauge row */}
-      <div className="flex items-center gap-6">
-        <RingGauge value={cpu.maxLoad} color={CPU_COLOR} size={110} label="Load" />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex justify-center sm:justify-start">
+          <RingGauge value={cpu.maxLoad} color={CPU_COLOR} size={110} label="Load" />
+        </div>
         {settings.cpu.load && Array.isArray(cpu.load) && cpu.load.length > 0 && (
-          <div className="flex-1 flex flex-col gap-1 overflow-hidden max-h-[110px] overflow-y-auto pr-1">
+          <div className="flex-1 flex flex-col gap-1 overflow-hidden max-h-[200px] sm:max-h-[110px] overflow-y-auto pr-1">
             {cpu.load.map((s) => (
               <SensorRow key={s.name} sensor={s} color={CPU_COLOR} />
             ))}
