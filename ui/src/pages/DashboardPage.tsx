@@ -57,8 +57,8 @@ function DashboardContent() {
           </div>
         ) : snapshot ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {/* CPU card — always shown, but inner sections follow settings */}
-            <CpuCard cpu={snapshot.cpu} timestamp={snapshot.timestamp} />
+            {/* CPU card — hidden when settings.cpu.enabled is false */}
+            {settings.cpu.enabled && <CpuCard cpu={snapshot.cpu} timestamp={snapshot.timestamp} />}
 
             {/* RAM card — hidden when settings.ram is false */}
             {settings.ram && snapshot.ram && <RamCard ram={snapshot.ram} timestamp={snapshot.timestamp} />}

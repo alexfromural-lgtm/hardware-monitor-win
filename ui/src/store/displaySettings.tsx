@@ -4,6 +4,7 @@ import { createContext, useContext, useReducer, useEffect, type ReactNode } from
 
 export interface DisplaySettings {
   cpu: {
+    enabled: boolean;
     load: boolean;
     temperature: boolean;
     clock: boolean;
@@ -19,6 +20,7 @@ export interface DisplaySettings {
 }
 
 export type DisplaySettingsAction =
+  | { type: 'TOGGLE_CPU_ENABLED' }
   | { type: 'TOGGLE_CPU_LOAD' }
   | { type: 'TOGGLE_CPU_TEMPERATURE' }
   | { type: 'TOGGLE_CPU_CLOCK' }
@@ -33,7 +35,7 @@ export type DisplaySettingsAction =
 // ── Defaults ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_SETTINGS: DisplaySettings = {
-  cpu: { load: true, temperature: true, clock: true },
+  cpu: { enabled: true, load: true, temperature: true, clock: true },
   ram: true,
   gpu: { enabled: true, temperature: true, fan: true, vram: true },
   updateInterval: 5000,
@@ -55,6 +57,8 @@ function loadFromStorage(): DisplaySettings {
 
 function reducer(state: DisplaySettings, action: DisplaySettingsAction): DisplaySettings {
   switch (action.type) {
+    case 'TOGGLE_CPU_ENABLED':
+      return { ...state, cpu: { ...state.cpu, enabled: !state.cpu.enabled } };
     case 'TOGGLE_CPU_LOAD':
       return { ...state, cpu: { ...state.cpu, load: !state.cpu.load } };
     case 'TOGGLE_CPU_TEMPERATURE':

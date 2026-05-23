@@ -83,6 +83,7 @@ function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               </svg>
               CPU
             </div>
+            <Toggle label="CPU Card"         checked={settings.cpu.enabled}     action={{ type: 'TOGGLE_CPU_ENABLED' }}     dispatch={dispatch} indent />
             <Toggle label="Per-core Load"    checked={settings.cpu.load}        action={{ type: 'TOGGLE_CPU_LOAD' }}        dispatch={dispatch} indent />
             <Toggle label="Temperature"      checked={settings.cpu.temperature} action={{ type: 'TOGGLE_CPU_TEMPERATURE' }} dispatch={dispatch} indent />
             <Toggle label="Clock Speed"      checked={settings.cpu.clock}       action={{ type: 'TOGGLE_CPU_CLOCK' }}       dispatch={dispatch} indent />
