@@ -38,9 +38,7 @@ interface SettingsPanelProps {
 
 function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { settings, dispatch } = useDisplaySettings();
-  const [setPollInterval] = useMutation<{ setPollInterval: number }, { ms: number }>(
-    SET_POLL_INTERVAL,
-  );
+  const [setPollInterval] = useMutation(SET_POLL_INTERVAL);
 
   return (
     <>
