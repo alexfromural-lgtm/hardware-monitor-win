@@ -26,13 +26,15 @@ hardware-monitor-win/
 │  Windows Host                                                   │
 │                                                                 │
 │  ┌──────────────┐  REST/:5390   ┌────────────────────────────┐ │
-│  │  Collector   │─────────────▶│  Apollo GraphQL Server     │ │
+│  │  Collector   │──────────────▶│  Apollo GraphQL Server     │ │
 │  │  (npm run    │               │  HTTP  :4000/graphql       │ │
 │  │  collector)  │               │  WS    :4000/graphql       │ │
 │  └──────────────┘               └────────────┬───────────────┘ │
-│                                             │ WebSocket        │
-│  ┌──────────────────────────────────────────▼───────────────┐  │
-│  │  Browser — http://localhost:5173                         │  │
+│                                              │ WebSocket        │
+│  ┌───────────────────────────────────────────▼──────────────┐  │
+│  │  Browser                                                 │  │
+│  │  Dev  → http://localhost:5173  (Vite dev server)         │  │
+│  │  Prod → http://localhost       (Nginx via Docker)        │  │
 │  │  React 19 + Apollo Client (graphql-ws subscription)      │  │
 │  │  CPU card · RAM card · GPU card · sparklines · gauges    │  │
 │  └──────────────────────────────────────────────────────────┘  │
@@ -44,27 +46,51 @@ hardware-monitor-win/
 ### Prerequisites
 
 - Node.js 20+
-- Docker Desktop (for the server Docker workflow — optional for dev)
+- Docker Desktop (for the Docker workflow — optional for dev)
 
-### 1. Start the server and UI together
+---
+
+### Option A — Docker (full stack, production-like)
+
+Starts the GraphQL server and the React UI (served by Nginx) together:
+
 ```bash
 docker compose up --build
 ```
 
-### 1. Start the server separately
+| Endpoint | URL |
+|---|---|
+| Dashboard (Nginx) | http://localhost |
+| GraphQL / WebSocket | http://localhost:4000/graphql |
+
+> The Collector must still run on the Windows host (see step 1 below), since
+> it reads hardware sensors and cannot run inside a Linux container.
+
+---
+
+### Option B — Local dev (hot-reload)
+
+#### 1. Start the Collector (Windows host — keep this terminal open)
 
 ```bash
 cd server
 npm install
-cp .env.sample .env      # then set CORS_ORIGIN=http://localhost:5173
+cp .env.sample .env      # set CORS_ORIGIN=http://localhost:5173
 
-# Terminal A — hardware collector (Windows host)
 npm run collector
+```
 
-# Note: For PowerShell running as an Administrator run this first:
-# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> **PowerShell note**: if scripts are blocked, run this first (once):
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
 
-# Terminal B — GraphQL server with hot-reload
+Verify: `curl http://localhost:5390/rest`
+
+#### 2. Start the GraphQL server (with hot-reload)
+
+```bash
+# In a new terminal, still inside server/
 npm run dev:graphql
 ```
 
@@ -73,9 +99,7 @@ npm run dev:graphql
 
 📖 [Full server docs](server/README.md)
 
----
-
-### 2. Start the UI separately
+#### 3. Start the UI
 
 ```bash
 cd ui
@@ -100,14 +124,21 @@ npm run dev
 
 ## Key Features
 
-- **Zero client polling** — data is pushed from server to browser via WebSocket every ~2 s
+- **Zero client polling** — data is pushed from server to browser via WebSocket
 - **Animated gauges** — SVG ring gauges with smooth CSS transitions
 - **Sparkline history** — 60-point rolling charts persisted to `localStorage`
 - **Multi-GPU support** — tabbed view, one tab per detected GPU
 - **Live connection badge** — `LIVE` / `CONNECTING` / `ERROR` status at a glance
 - **Skeleton loaders** — frosted-glass placeholders while the first snapshot arrives
-- **Settings panel** — slide-in drawer to toggle metric sections (load, temperature,
-  clock, fan, VRAM) and set the UI update frequency (1 s / 2 s / 5 s / 10 s)
+- **Settings panel** — slide-in drawer to toggle individual cards and metric sections
+  (per-core load, temperature, clock speed, GPU fan, VRAM)
+- **CPU / GPU card toggle** — toggling a card completely removes it from the grid;
+  toggling it back on seamlessly re-subscribes to the correct fields
+- **Server-side poll interval** — Update Frequency picker sends a `setPollInterval`
+  GraphQL mutation; the server broadcasts the new rate to **all** connected clients
+  via `pollIntervalChanged` subscription so every tab stays in sync
 - **Dynamic GraphQL query** — only enabled fields are requested, saving bandwidth
 - **Client-side throttle** — React re-renders capped at the chosen update interval
 - **Page Visibility API** — rendering pauses when the tab is hidden
+- **Mobile-friendly layout** — CPU gauge and core list stack vertically on narrow
+  viewports; core status badges are placed inline with core names for readability

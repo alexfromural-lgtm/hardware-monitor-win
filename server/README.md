@@ -130,9 +130,10 @@ type HardwareSnapshot {
 }
 ```
 
-### Query — current snapshot
+### Queries
 
 ```graphql
+# Latest hardware snapshot (refreshed every POLL_INTERVAL_MS)
 query {
   hardware {
     cpu {
@@ -161,11 +162,28 @@ query {
     timestamp
   }
 }
+
+# Current server-side poll interval in milliseconds
+query {
+  pollInterval
+}
 ```
 
-### Subscription — live updates
+### Mutation — change poll interval
 
 ```graphql
+# Accepted range: 500 – 60000 ms.
+# Returns the clamped, accepted value.
+# Broadcasts pollIntervalChanged to all connected clients.
+mutation {
+  setPollInterval(ms: 2000)
+}
+```
+
+### Subscriptions
+
+```graphql
+# Live hardware snapshots — fires every POLL_INTERVAL_MS
 subscription {
   hardwareUpdated {
     timestamp
@@ -174,13 +192,20 @@ subscription {
     gpu { index name vendor loadPercent temperatureC }
   }
 }
+
+# Fires whenever any client calls setPollInterval.
+# All clients subscribe so the Update Frequency picker stays in sync.
+subscription {
+  pollIntervalChanged
+}
 ```
 
 Connect via WebSocket to `ws://localhost:4000/graphql` using the
 [graphql-ws](https://github.com/enisdenjo/graphql-ws) client protocol.
 
-> The UI builds the subscription document dynamically via `buildSubscription.ts`,
-> requesting only the fields the user has enabled in the Settings Panel.
+> The UI builds the `hardwareUpdated` subscription document dynamically via
+> `buildSubscription.ts`, requesting only the fields the user has enabled in
+> the Settings Panel.
 
 ## Environment Variables
 
@@ -198,6 +223,9 @@ Connect via WebSocket to `ws://localhost:4000/graphql` using the
 - **CPU Temperature**: May return an empty array on Windows without Administrator privileges.
 - **GPU Data**: Requires `nvidia-smi` on PATH (installed with NVIDIA drivers).  
   AMD/Intel GPUs will return partial data via `systeminformation`.
+- **Poll interval**: `setPollInterval` clamps input to 500–60 000 ms and
+  broadcasts `pollIntervalChanged` to all subscribers so every open tab updates
+  its picker without a page refresh.
 - The Collector process must stay running while the GraphQL server is active.
 - In development, the Collector and GraphQL server can both run natively on
   Windows (no Docker needed).

@@ -118,9 +118,17 @@ src/
 - **Error banner** — friendly message if the subscription drops
 - **Responsive layout** — three-column grid (CPU · RAM · GPU) on wide screens;
   stacks to single column on narrow viewports
-- **Settings panel** — slide-in drawer lets you toggle individual metric
-  sections (per-core load, temperature, clock speed, GPU fan, VRAM) and
-  choose the UI update frequency (1 s / 2 s / 5 s / 10 s)
+- **Mobile-friendly CPU card** — gauge and per-core list stack vertically on
+  small screens; core status badges are shown inline with core names
+- **Settings panel** — slide-in drawer lets you toggle individual cards or
+  specific metric sections (per-core load, temperature, clock speed, GPU fan,
+  VRAM) and choose the UI update frequency (1 s / 2 s / 5 s / 10 s)
+- **CPU / GPU card toggle** — toggling a card completely removes it from the
+  grid; toggling back on re-creates the subscription for the correct fields,
+  guarding against stale snapshots during the transition
+- **Server-side poll interval** — changing Update Frequency sends a
+  `setPollInterval` GraphQL mutation; the server broadcasts `pollIntervalChanged`
+  to every connected client so all tabs stay in sync automatically
 - **Dynamic GraphQL query** — only the fields enabled in Settings are
   requested from the server, saving bandwidth
 - **Client-side throttle** — re-renders are capped at the chosen update
@@ -136,6 +144,7 @@ immediately without a page reload.
 
 | Setting | Default | Description |
 |---|---|---|
+| CPU card | on | Show / hide the entire CPU card |
 | CPU › Per-core Load | on | Show per-core load sensor bars and sparkline |
 | CPU › Temperature | on | Show per-core / package temperature readings |
 | CPU › Clock Speed | on | Show per-core clock speed readings |
@@ -144,28 +153,37 @@ immediately without a page reload.
 | GPU › Temperature | on | Show GPU temperature |
 | GPU › Fan Speed | on | Show GPU fan speed |
 | GPU › VRAM Usage | on | Show VRAM used / total bar |
-| Update Frequency | 5 s | How often React re-renders (1 s / 2 s / 5 s / 10 s) |
+| Update Frequency | 5 s | How often the server polls hardware (1 s / 2 s / 5 s / 10 s) |
 
-> The update frequency controls only the React render rate. The server still
-> pushes data every `POLL_INTERVAL_MS` (default 2 s); the client throttles
-> how often those frames trigger a state update.
+> **Update Frequency** sends a `setPollInterval` GraphQL mutation to the server.
+> The server broadcasts `pollIntervalChanged` to every connected client so all
+> open tabs automatically update their picker — no page refresh needed.
 
 ## How Subscriptions Work
 
 ```
 Browser                               Server
   │                                     │
-  │── WebSocket handshake ─────────────▶│
-  │◀─ connection_ack ───────────────────│
-  │── subscribe { hardwareUpdated } ───▶│
-  │                                     │── poll hardware every 2 s
-  │◀─ next { data: { hardwareUpdated } }│◀─ pubsub.publish(snapshot)
-  │   (repeated every ~2 seconds)       │
+  ├── WebSocket handshake ──────────────▶│
+  ◄─ connection_ack ───────────────────│
+  ├── subscribe { hardwareUpdated } ───▶│
+  │                                     ├── poll hardware every N s
+  ◄─ next { data: { hardwareUpdated } }│◄─ pubsub.publish(snapshot)
+  │   (repeated every ~N seconds)       │
+  │                                     │
+  ├── subscribe { pollIntervalChanged } ▶│
+  ├── mutation setPollInterval(ms:1000) ▶│── updates timer, clamps to 500–60000ms
+  ◄─ next { data: { pollIntervalChanged: 1000 } }
+  │   (all connected clients receive this)
 ```
 
 Apollo Client's **split link** automatically routes `Subscription` operations
 over WebSocket and `Query`/`Mutation` operations over HTTP.
 
-The subscription document is rebuilt by `buildSubscription.ts` whenever the
-display settings change, so only the fields the user has enabled are included
-in the request.
+The `hardwareUpdated` subscription document is rebuilt by `buildSubscription.ts`
+whenever the display settings change, so only the fields the user has enabled
+are included in the request.
+
+The `pollIntervalChanged` subscription keeps every open tab's Update Frequency
+picker in sync: when any client changes the rate, the server broadcasts the
+new value and all clients update their local state automatically.
