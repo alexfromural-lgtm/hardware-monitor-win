@@ -7,9 +7,15 @@ const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS ?? '2000', 10);
 
 export const pubsub = new PubSub();
 const HARDWARE_UPDATED = 'HARDWARE_UPDATED';
+const POLL_INTERVAL_CHANGED = 'POLL_INTERVAL_CHANGED';
+
+/** Minimum / maximum accepted poll intervals (ms). */
+const MIN_INTERVAL_MS = 500;
+const MAX_INTERVAL_MS = 60_000;
 
 let latestSnapshot: HardwareSnapshot | null = null;
 let pollTimer: NodeJS.Timeout | null = null;
+let currentPollIntervalMs = POLL_INTERVAL_MS;
 
 async function poll(): Promise<void> {
   try {
@@ -48,6 +54,24 @@ export function stopPolling(): void {
 }
 
 /**
+ * Dynamically change the poll interval at runtime.
+ * The new value is clamped to [MIN_INTERVAL_MS, MAX_INTERVAL_MS].
+ * Immediately restarts the interval and broadcasts the change to all
+ * connected clients via the pollIntervalChanged subscription.
+ * Returns the accepted (possibly clamped) interval in ms.
+ */
+export function restartPolling(newIntervalMs: number): number {
+  const clamped = Math.max(MIN_INTERVAL_MS, Math.min(MAX_INTERVAL_MS, newIntervalMs));
+  stopPolling();
+  currentPollIntervalMs = clamped;
+  console.log(`[HardwareService] Poll interval changed to ${clamped}ms`);
+  poll(); // immediate poll so clients get fresh data right away
+  pollTimer = setInterval(poll, clamped);
+  pubsub.publish(POLL_INTERVAL_CHANGED, { pollIntervalChanged: clamped });
+  return clamped;
+}
+
+/**
  * Returns the most recently collected hardware snapshot.
  * Returns null if no successful poll has occurred yet.
  */
@@ -55,4 +79,8 @@ export function getLatestSnapshot(): HardwareSnapshot | null {
   return latestSnapshot;
 }
 
-export { HARDWARE_UPDATED };
+export function getCurrentPollInterval(): number {
+  return currentPollIntervalMs;
+}
+
+export { HARDWARE_UPDATED, POLL_INTERVAL_CHANGED };

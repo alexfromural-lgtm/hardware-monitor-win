@@ -1,6 +1,8 @@
 import { memo } from 'react';
+import { useMutation } from '@apollo/client/react';
 import { useDisplaySettings } from '../../store/displaySettings';
 import type { DisplaySettingsAction } from '../../store/displaySettings';
+import { SET_POLL_INTERVAL } from '../../graphql/queries';
 
 interface ToggleProps {
   label: string;
@@ -36,6 +38,9 @@ interface SettingsPanelProps {
 
 function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { settings, dispatch } = useDisplaySettings();
+  const [setPollInterval] = useMutation<{ setPollInterval: number }, { ms: number }>(
+    SET_POLL_INTERVAL,
+  );
 
   return (
     <>
@@ -141,7 +146,13 @@ function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     className={`settings-select-btn ${
                       settings.updateInterval === ms ? 'settings-select-btn--active' : ''
                     }`}
-                    onClick={() => dispatch({ type: 'SET_UPDATE_INTERVAL', payload: ms })}
+                    onClick={() => {
+                      // Optimistic local update — UI responds instantly
+                      dispatch({ type: 'SET_UPDATE_INTERVAL', payload: ms });
+                      // Tell the server; it will broadcast pollIntervalChanged
+                      // to all other connected clients so their pickers sync too
+                      setPollInterval({ variables: { ms } });
+                    }}
                   >
                     {ms / 1000}s
                   </button>
@@ -152,7 +163,7 @@ function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         </div>
 
         <div className="settings-panel__footer">
-          <span className="settings-panel__hint">Changes apply instantly & update the GraphQL query</span>
+          <span className="settings-panel__hint">Frequency changes apply to all connected clients</span>
         </div>
       </aside>
     </>

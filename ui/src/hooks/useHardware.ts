@@ -3,6 +3,7 @@ import { useSubscription } from '@apollo/client/react';
 import type { HardwareSnapshot } from '../graphql/types';
 import { buildSubscription } from '../graphql/buildSubscription';
 import { useDisplaySettings } from '../store/displaySettings';
+import { POLL_INTERVAL_CHANGED } from '../graphql/queries';
 
 interface UseHardwareResult {
   snapshot: HardwareSnapshot | null;
@@ -11,20 +12,33 @@ interface UseHardwareResult {
 }
 
 export function useHardware(): UseHardwareResult {
-  const { settings } = useDisplaySettings();
+  const { settings, dispatch } = useDisplaySettings();
 
   // Rebuild the gql document only when settings change
   const query = useMemo(() => buildSubscription(settings), [settings]);
 
-  // Raw subscription — fires at the server's poll rate (e.g. every 2 s)
+  // Raw subscription — fires at the server's poll rate
   const { data, loading, error } = useSubscription<{ hardwareUpdated: HardwareSnapshot | null }>(
     query,
   );
 
+  // ── Sync poll interval across all clients ───────────────────────────────────
+  // When any client calls setPollInterval the server broadcasts pollIntervalChanged.
+  // We listen here and update the local store so every client's UI picker stays
+  // in sync without requiring a page refresh.
+  useSubscription<{ pollIntervalChanged: number }>(POLL_INTERVAL_CHANGED, {
+    onData: ({ data: { data: intervalData } }) => {
+      const ms = intervalData?.pollIntervalChanged;
+      if (ms != null) {
+        dispatch({ type: 'SET_UPDATE_INTERVAL', payload: ms });
+      }
+    },
+  });
+
   // ── Client-side throttle ────────────────────────────────────────────────────
   // The snapshot state only updates at most once per updateInterval ms.
-  // This is the PRIMARY CPU reduction: React only re-renders the entire card
-  // tree at the user-chosen rate, regardless of how fast the WS fires.
+  // When the server interval matches the client interval this is effectively
+  // a pass-through; it remains as a safety net for edge cases.
   const [snapshot, setSnapshot] = useState<HardwareSnapshot | null>(null);
 
   // Use refs so the flush callback never becomes stale

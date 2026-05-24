@@ -75,6 +75,18 @@ export const typeDefs = `#graphql
     Returns null if the collector has not yet responded.
     """
     hardware: HardwareSnapshot
+    """Returns the current server-side poll interval in milliseconds."""
+    pollInterval: Int!
+  }
+
+  type Mutation {
+    """
+    Dynamically changes the server-side hardware poll interval.
+    Accepted range: 500 – 60000 ms. The new interval is broadcast to all
+    connected clients via the pollIntervalChanged subscription.
+    Returns the accepted interval in milliseconds.
+    """
+    setPollInterval(ms: Int!): Int!
   }
 
   type Subscription {
@@ -83,5 +95,10 @@ export const typeDefs = `#graphql
     Pushes null if the collector has not yet responded.
     """
     hardwareUpdated: HardwareSnapshot
+    """
+    Fires whenever any client calls setPollInterval.
+    All connected clients should update their local UI to reflect the new rate.
+    """
+    pollIntervalChanged: Int!
   }
 `;
