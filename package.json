@@ -1,0 +1,18 @@
+{
+  "name": "hardware-monitor-win",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Windows Hardware Monitor with Apollo GraphQL",
+  "scripts": {
+    "prepare": "husky",
+    "lint-staged:server": "cd server && npx lint-staged",
+    "lint-staged:ui": "cd ui && npx lint-staged"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5"
+  },
+  "dependencies": {
+    "hardware-monitor-win": "file:"
+  }
+}
