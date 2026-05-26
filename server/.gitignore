@@ -3,3 +3,16 @@ dist/
 .env
 *.log
 .DS_Store
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# AI editors
+.claude/
+.cursor/
+.codex/
+
+# Husky internal storage (auto-generated, not tracked)
+.husky/_

@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "description": "Windows Hardware Monitor with Apollo GraphQL",
   "private": true,
+  "type": "module",
   "scripts": {
     "collector": "ts-node src/collector/index.ts",
     "dev:graphql": "nodemon",
     "build": "tsc",
-    "start": "node dist/graphql/index.js"
+    "start": "node dist/graphql/index.js",
+    "lint": "eslint .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@apollo/server": "^4.12.2",
@@ -29,8 +32,18 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.19.0",
     "@types/ws": "^8.18.1",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "nodemon": "^3.1.10",
+    "prettier": "^3.8.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.39.1"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css}": "prettier --write"
   }
 }
